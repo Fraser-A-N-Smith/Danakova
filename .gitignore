@@ -1,0 +1,7 @@
+# CollabMD runtime metadata
+vault/.collabmd/
+# Obsidian per-machine UI state
+vault/.obsidian/workspace.json
+vault/.obsidian/workspace-mobile.json
+# Secrets
+.env
