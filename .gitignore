@@ -1,11 +1,16 @@
-# CollabMD runtime state. Lives on disk and survives restarts, but most of it is
-# regenerable churn that shouldn't be in history.
-vault/.collabmd/yjs/           # binary CRDT state, rewritten constantly
-vault/.collabmd/*.sqlite       # agent-access / hosted metadata
+# CollabMD runtime state. It lives on disk and survives restarts, but most of it
+# is regenerable churn that shouldn't be in history.
+# (Comments must be on their own lines here -- git does not strip trailing ones.)
+
+# Binary CRDT state, rewritten constantly
+vault/.collabmd/yjs/
+# Agent-access / hosted metadata
+vault/.collabmd/*.sqlite
 vault/.collabmd/structurizr/
 vault/.collabmd/pull-backups/
-# NOTE: vault/.collabmd/comments/ is deliberately NOT ignored -- comment threads
-# are things people wrote, so they belong in backups alongside the notes.
+
+# vault/.collabmd/comments/ is deliberately NOT ignored -- comment threads are
+# things people wrote, so they belong in backups alongside the notes.
 
 # Obsidian per-machine UI state
 vault/.obsidian/workspace.json
