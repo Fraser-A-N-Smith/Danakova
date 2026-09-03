@@ -87,3 +87,27 @@ Two things that *are* lost on shutdown, neither of them content:
   Same exposure as any editor.
 
 Player logins survive, because `AUTH_SESSION_SECRET` is pinned in `.env`.
+
+## Backups
+
+The vault is pushed to `https://github.com/Fraser-A-N-Smith/Danakova.git`
+(private) on branch `main`. This is the campaign's undo button: CRDT merging stops
+players clobbering each other's typing, but it does not protect against someone
+deleting a note.
+
+```powershell
+git add -A
+git commit -m "Session 4"
+git push
+```
+
+Worth doing after each session. What is and isn't backed up:
+
+- **Backed up** — every note, plus `vault/.collabmd/comments/` (anchored comment
+  threads are things people wrote, so they belong in history)
+- **Not backed up** — `.env`, and CollabMD's regenerable runtime state
+  (`yjs/` binary CRDT blobs, sqlite metadata, pull-backups)
+
+`.env` is gitignored deliberately: it holds the shared password and the session
+signing key. If you ever need those on another machine, copy the file by hand
+rather than committing it.
