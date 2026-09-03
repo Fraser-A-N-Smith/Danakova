@@ -6,30 +6,57 @@ over a Cloudflare Quick Tunnel. No subscriptions.
 ## Running it
 
 ```powershell
-.\start-campaign.ps1   # prints + copies the share link and password
+.\start-campaign.ps1        # prints + copies the share link and password
 .\stop-campaign.ps1
+.\sync-obsidian-edits.ps1   # only needed if you edited in Obsidian (see below)
 ```
 
 ## How it fits together
 
-- `vault/` is the notes. Plain markdown on your disk — **open this folder as a
-  vault in Obsidian** and use Obsidian normally. Edits sync into the browser live.
+- `vault/` is the notes — plain markdown on your disk.
 - `docker-compose.yml` runs two containers: CollabMD (the editor) and cloudflared
   (the public link).
-- `.env` holds the shared password. Gitignored. Change it and restart to rotate.
+- `.env` holds the shared password and session key. Gitignored. Change and restart
+  to rotate.
 
-## Things to know
+## Read this before you rely on it
 
-- **Your PC is the server.** Players can only reach the vault while this machine
-  is awake and the containers are running.
-- **The share link changes on every restart.** The password doesn't. Post the new
-  link in Discord when you start up. (A permanent hostname needs a Cloudflare
-  account plus a domain you own.)
+**Edit in the browser, not in Obsidian.** This is the important one. Docker on
+Windows does not forward filesystem events into containers — this was tested
+directly on this machine: `fs.watch` fires correctly on the container's own
+filesystem and fires *nothing at all* on the `./vault` bind mount. CollabMD uses
+exactly that API to detect external edits, so:
+
+- Notes you edit in Obsidian will **not** appear for your players until CollabMD
+  rescans the vault.
+- Worse, CollabMD's in-memory copy is then stale, so a later browser edit to the
+  same note can overwrite what you wrote in Obsidian.
+
+CollabMD rescans on startup, so `.\sync-obsidian-edits.ps1` makes your Obsidian
+changes live. But the safe habit is to treat the browser as the editing surface
+for this vault and use Obsidian for reading, Graph View, and plugins. Your personal
+`Notes Vault` is unaffected — this only concerns the campaign vault.
+
+The browser editor is not a downgrade for note-taking: wiki-links, backlinks,
+outline, quick switcher, global search, live preview, diagrams, anchored comments,
+presence and chat are all there.
+
+## Other things to know
+
+- **Your PC is the server.** Players can only reach the vault while this machine is
+  awake and the containers are running.
+- **The share link changes every restart of the tunnel.** The password does not.
+  Post the new link in Discord when you start up. A permanent hostname needs a
+  Cloudflare account plus a domain you own. `sync-obsidian-edits.ps1` restarts only
+  CollabMD, so it leaves the link intact.
 - **There is no per-user permission model.** Anyone with the link and password can
-  read and edit every file in `vault/`. Keep DM-only material in a separate vault
-  that is not this folder.
-- **Players use the browser, not Obsidian.** They get editing, wiki-links,
-  backlinks, search, comments, presence and chat. They do not get plugins,
-  Graph View, or the Obsidian mobile app.
-- **Git history is your undo.** CRDT merging prevents clobbering; it does not
-  protect against someone deleting a note. Commit regularly.
+  read and edit every file in `vault/`. Keep DM-only material in a different vault.
+- **Git history is your undo.** CRDT merging stops people clobbering each other's
+  typing; it does not stop someone deleting a note. Commit regularly.
+
+## Verified working on this machine
+
+- CollabMD v0.1.49 healthy, vault mounted, backlinks index resolving
+- Password auth: correct password `200`, wrong password `401`, unauthenticated API `401`
+- Cloudflare Quick Tunnel reachable from the public internet and gated by that password
+- Vault rescan on restart picks up files created outside the container

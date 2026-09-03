@@ -6,21 +6,26 @@ services:
     container_name: collabmd
     restart: unless-stopped
     environment:
-      # Password is read from .env (never commit that file).
+      # Vault path inside the container (./vault is mounted here).
+      COLLABMD_VAULT_DIR: /data
+      # Shared password auth. Values come from .env -- never commit that file.
       AUTH_STRATEGY: password
       AUTH_PASSWORD: ${COLLABMD_PASSWORD:?set COLLABMD_PASSWORD in .env}
-      # Keep players signed in for 30 days so they aren't re-typing the password every session.
+      # Stable secret so players stay signed in across restarts of this stack.
+      AUTH_SESSION_SECRET: ${COLLABMD_SESSION_SECRET:?set COLLABMD_SESSION_SECRET in .env}
+      # 30 days, so nobody re-types the password every session.
       AUTH_SESSION_MAX_AGE_MS: "2592000000"
-      GIT_AUTHOR_NAME: CollabMD
-      GIT_AUTHOR_EMAIL: collabmd@localhost
-    command: ["/data", "--no-tunnel", "--auth", "password"]
+      # In-browser git commits are attributed to the vault, not a person.
+      COLLABMD_GIT_ENABLED: "true"
+      COLLABMD_GIT_USER_NAME: CollabMD
+      COLLABMD_GIT_USER_EMAIL: collabmd@localhost
     volumes:
       - ./vault:/data
-    expose:
-      - "1234"
     ports:
-      # Local access for you, so you can use the browser editor without the tunnel.
+      # Local access for you, without going through the tunnel.
       - "127.0.0.1:1234:1234"
+    # Image default command is already `node bin/collabmd.js --no-tunnel`;
+    # cloudflared below provides the tunnel instead.
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -29,5 +34,5 @@ services:
     depends_on:
       - collabmd
     # Quick Tunnel: no Cloudflare account needed. The URL is random and
-    # changes every restart -- read it from this container's logs.
+    # changes every restart -- start-campaign.ps1 reads it from these logs.
     command: tunnel --no-autoupdate --url http://collabmd:1234
