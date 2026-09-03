@@ -60,3 +60,30 @@ presence and chat are all there.
 - Password auth: correct password `200`, wrong password `401`, unauthenticated API `401`
 - Cloudflare Quick Tunnel reachable from the public internet and gated by that password
 - Vault rescan on restart picks up files created outside the container
+
+## Does shutting down lose data? No — tested
+
+`docker compose down` was run with both containers fully removed. All notes and
+CollabMD's CRDT state were still on disk afterwards, unchanged.
+
+Nothing lives inside the containers. `docker compose config --volumes` returns
+empty — there are no named volumes. The only mount is a bind mount of
+`.\vault` to `/data`, so every write goes straight to your Windows disk:
+
+- `vault/**/*.md` — the notes themselves
+- `vault/.collabmd/yjs/` — per-file CRDT state, so in-progress collaborative
+  edits are restored rather than reset
+- `vault/.collabmd/comments/` — anchored comment threads (tracked in git)
+
+The containers are disposable; `docker compose down` then `up` rebuilds them
+from the image and re-reads everything from disk.
+
+Two things that *are* lost on shutdown, neither of them content:
+
+- **The tunnel URL.** `down` kills cloudflared, so the next start gets a new
+  random `trycloudflare.com` address. Use `sync-obsidian-edits.ps1` rather than a
+  full restart when you only need a vault rescan — it leaves the tunnel alone.
+- **The last instant of unsaved typing**, if you kill the server mid-keystroke.
+  Same exposure as any editor.
+
+Player logins survive, because `AUTH_SESSION_SECRET` is pinned in `.env`.
